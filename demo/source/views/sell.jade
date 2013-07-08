@@ -1,0 +1,20 @@
+extends ./layout
+block bodyContainer
+  include ./header
+  - fileImporter.importCss(['/ys/stylesheets/item.styl', '/ys/stylesheets/order.styl', '/ys/stylesheets/select.styl', '/ys/stylesheets/sellpage.styl', '/ys/stylesheets/print.styl']);
+  - fileImporter.importJs(['/ys/javascripts/item.coffee', '/ys/javascripts/order.coffee', '/ys/javascripts/select.coffee', '/ys/javascripts/sellpage.coffee'])
+  #contentContainer.notPrint
+    #sellPageContainer
+      .sellInfo
+        .depot.item
+        .client.item
+        .payType.item
+        .sellOrderNo.item 
+          i.icon.iReload.borderRadius3.getOrderNo
+          | 销售单编号：
+          span.no .
+        .print.item.btn 打印
+        .saveToTemp.item.btn 存为草稿
+        .save.item.btn.btnPrimary 保存
+      .sellItemsContainer
+      .selectItemsContainer

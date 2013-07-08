@@ -4,6 +4,7 @@ fs = require 'fs'
 mkdirp = require 'mkdirp'
 path = require 'path'
 program = require 'commander'
+cleanCSS = require 'clean-css'
 parser = require './lib/parser'
 myUtils = require './lib/utils'
 program
@@ -34,7 +35,7 @@ deploy = (source, target, minPath = '') ->
         else
           cbf null, infos.files
     (files, cbf) ->
-      handleFiles source, target, minPath, files
+      handleFiles source, target, minPath, files, cbf
   ], (err) ->
     if err
       console.error err
@@ -61,18 +62,27 @@ convertFileName = (file) ->
   file.substring(0, file.length - ext.length) + nexExt
 
 copyFile = (file, targetFile, cbf) ->
-  fs.createReadStream(file).pipe fs.createWriteStream targetFile
-  process.nextTick ->
-    cbf null
+  async.waterfall [
+    (cbf) ->
+      fs.readFile file, cbf
+    (data, cbf) ->
+      fs.writeFile targetFile, data, cbf
+  ], cbf
+  # fs.createReadStream(file).pipe fs.createWriteStream targetFile
+  # process.nextTick ->
+  #   cbf null
 
 handleFiles = (source, target, minPath, files, cbf) ->
   total = files.length
   complete = 0
   async.eachLimit files, 10, (file, cbf) ->
     targetFile = target + file.substring source.length
+    ext = path.extname file
     complete++
     if isHandleFile file
       handleFile file, targetFile, minPath, cbf
+    else if ext == '.css'
+      minifyCss file, targetFile, cbf
     else
       copyFile file, targetFile, cbf
     if !(complete % 10)
@@ -82,7 +92,20 @@ handleFiles = (source, target, minPath, files, cbf) ->
       cbf err
     else
       console.dir 'complete all!'
-
+      cbf null
+minifyCss = (file, targetFile, cbf) ->
+  async.waterfall [
+    (cbf) ->
+      fs.readFile file, 'utf8', cbf
+    (data, cbf) ->
+      css = cleanCSS.process data, {
+        keepSpecialComments : 1
+        removeEmpty : true
+      }
+      cbf null, css
+    (data, cbf) ->
+      fs.writeFile targetFile, data, cbf
+  ], cbf
 
 handleFile = (file, targetFile, minPath, cbf) ->
   ext = path.extname file
@@ -94,13 +117,13 @@ handleFile = (file, targetFile, minPath, cbf) ->
     (cbf) ->
       handler file, cbf
     (data, cbf) ->
-      saveFile = convertFileName targetFile
-      if ext == '.js'
-        mapFile = saveFile.substring(0, saveFile.length - ext.length) + '.map'
-        fs.writeFile saveFile, data.code, 'utf8', cbf
-        fs.writeFile mapFile, data.map
+      if min && ext == '.coffee'
+        parser.js data, {fromString : true}, cbf
       else
-        fs.writeFile saveFile, data, 'utf8', cbf
+        cbf null, data
+    (data, cbf) ->
+      saveFile = convertFileName targetFile
+      fs.writeFile saveFile, data, 'utf8', cbf
   ], cbf
   # handler file, (err, data) ->
   #   if err
@@ -109,7 +132,7 @@ handleFile = (file, targetFile, minPath, cbf) ->
   #     fs.writeFile convertFileName(targetFile), data, 'utf8', cbf
 
 if program.source && program.target
-  deploy program.source, program.target, program.minPath
+  deploy program.source, program.target, program.min
 
 else
   console.error "the source path and target path must be set!"

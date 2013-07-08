@@ -1,0 +1,18 @@
+extends ./layout
+block bodyContainer
+  include ./header
+  - fileImporter.importCss(['/ys/stylesheets/item.styl', '/ys/stylesheets/order.styl', '/ys/stylesheets/select.styl', '/ys/stylesheets/transferpage.styl', '/ys/stylesheets/print.styl']);
+  - fileImporter.importJs(['/ys/javascripts/item.coffee', '/ys/javascripts/order.coffee', '/ys/javascripts/select.coffee', '/ys/javascripts/transferpage.coffee'])
+  #contentContainer.notPrint
+    #transferPageContainer
+      .transferInfo
+        .fromDepot.item
+        .toDepot.item
+        .payType.item
+        .transferOrderNo.item 
+          i.icon.iReload.borderRadius3.getOrderNo
+          | 转仓单编号：
+          span.no .
+        .save.item.btn.btnPrimary 保存
+      .transferItemsContainer
+      .selectItemsContainer

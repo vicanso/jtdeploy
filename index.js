@@ -1,5 +1,5 @@
 (function() {
-  var async, convertFileName, copyFile, createDirs, deploy, fs, handleFile, handleFiles, isHandleFile, mkdirp, myUtils, parseHandlers, parser, path, program, _;
+  var async, cleanCSS, convertFileName, copyFile, createDirs, deploy, fs, handleFile, handleFiles, isHandleFile, minifyCss, mkdirp, myUtils, parseHandlers, parser, path, program, _;
 
   async = require('async');
 
@@ -12,6 +12,8 @@
   path = require('path');
 
   program = require('commander');
+
+  cleanCSS = require('clean-css');
 
   parser = require('./lib/parser');
 
@@ -49,7 +51,7 @@
           }
         });
       }, function(files, cbf) {
-        return handleFiles(source, target, minPath, files);
+        return handleFiles(source, target, minPath, files, cbf);
       }
     ], function(err) {
       if (err) {
@@ -87,10 +89,13 @@
   };
 
   copyFile = function(file, targetFile, cbf) {
-    fs.createReadStream(file).pipe(fs.createWriteStream(targetFile));
-    return process.nextTick(function() {
-      return cbf(null);
-    });
+    return async.waterfall([
+      function(cbf) {
+        return fs.readFile(file, cbf);
+      }, function(data, cbf) {
+        return fs.writeFile(targetFile, data, cbf);
+      }
+    ], cbf);
   };
 
   handleFiles = function(source, target, minPath, files, cbf) {
@@ -98,11 +103,14 @@
     total = files.length;
     complete = 0;
     return async.eachLimit(files, 10, function(file, cbf) {
-      var targetFile;
+      var ext, targetFile;
       targetFile = target + file.substring(source.length);
+      ext = path.extname(file);
       complete++;
       if (isHandleFile(file)) {
         handleFile(file, targetFile, minPath, cbf);
+      } else if (ext === '.css') {
+        minifyCss(file, targetFile, cbf);
       } else {
         copyFile(file, targetFile, cbf);
       }
@@ -113,9 +121,27 @@
       if (err) {
         return cbf(err);
       } else {
-        return console.dir('complete all!');
+        console.dir('complete all!');
+        return cbf(null);
       }
     });
+  };
+
+  minifyCss = function(file, targetFile, cbf) {
+    return async.waterfall([
+      function(cbf) {
+        return fs.readFile(file, 'utf8', cbf);
+      }, function(data, cbf) {
+        var css;
+        css = cleanCSS.process(data, {
+          keepSpecialComments: 1,
+          removeEmpty: true
+        });
+        return cbf(null, css);
+      }, function(data, cbf) {
+        return fs.writeFile(targetFile, data, cbf);
+      }
+    ], cbf);
   };
 
   handleFile = function(file, targetFile, minPath, cbf) {
@@ -130,21 +156,23 @@
       function(cbf) {
         return handler(file, cbf);
       }, function(data, cbf) {
-        var mapFile, saveFile;
-        saveFile = convertFileName(targetFile);
-        if (ext === '.js') {
-          mapFile = saveFile.substring(0, saveFile.length - ext.length) + '.map';
-          fs.writeFile(saveFile, data.code, 'utf8', cbf);
-          return fs.writeFile(mapFile, data.map);
+        if (min && ext === '.coffee') {
+          return parser.js(data, {
+            fromString: true
+          }, cbf);
         } else {
-          return fs.writeFile(saveFile, data, 'utf8', cbf);
+          return cbf(null, data);
         }
+      }, function(data, cbf) {
+        var saveFile;
+        saveFile = convertFileName(targetFile);
+        return fs.writeFile(saveFile, data, 'utf8', cbf);
       }
     ], cbf);
   };
 
   if (program.source && program.target) {
-    deploy(program.source, program.target, program.minPath);
+    deploy(program.source, program.target, program.min);
   } else {
     console.error("the source path and target path must be set!");
   }

@@ -1,0 +1,14 @@
+extends ./baselayout
+block bodyContainer
+  include ./header
+  - fileImporter.importCss(['/ys/stylesheets/index.styl']);
+  - fileImporter.importJs(['/ys/javascripts/index.coffee']);
+  #contentContainer
+    include ./waterfall
+    include ./pagebuttonset
+  #contactUs
+    .content
+      p 地址：一德中路244号
+      p 固定电话：81922899
+      p 手机：13602893647
+    a.btn.btnPrimary(href='javascript:;') 联系我们

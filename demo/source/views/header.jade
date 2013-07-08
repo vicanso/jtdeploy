@@ -1,0 +1,16 @@
+- fileImporter.importCss('/ys/stylesheets/header.styl');
+//- - fileImporter.importJs('/blog/javascripts/header.coffee');
+header#header
+  - var navData = viewData.header.navData;
+  - var selectedIndex = viewData.header.selectedIndex;
+  ul.navbar
+    #weiboLogin
+    each nav, i in navData
+      - var navClass = 'navItem';
+      if i === selectedIndex
+          - navClass += ' active';
+      li(class='#{navClass}')
+        a(href="#{encodeURI(nav.url)}") #{nav.title}
+a#logoutBtn.btn(href='javascript:;') 退出登录
+a#loginBtn.btn.btnPrimary(href='javascript:;') 登录系统
+#loadingProgressTip.btn

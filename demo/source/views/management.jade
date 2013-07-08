@@ -1,0 +1,12 @@
+extends ./layout
+block bodyContainer
+  include ./header
+  - fileImporter.importCss(['/ys/stylesheets/management.styl']);
+  - fileImporter.importJs(['/ys/javascripts/management.coffee'])
+  #contentContainer.notPrint
+    .functions
+      a.btn.btnPrimary.function.sell(href='/sell', target='_blank') 销售管理
+      a.btn.btnPrimary.function.draft(href='/query', target='_blank') 查询管理
+      a.btn.btnPrimary.function.buy(href='/buy', target='_blank') 进货管理
+      a.btn.btnPrimary.function.transfer(href='/transfer', target='_blank') 转仓管理
+      a.btn.btnPrimary.function.addUser(href='javascript:;', target='_blank') 用户管理

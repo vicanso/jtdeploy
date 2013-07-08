@@ -1,0 +1,32 @@
+- var pageInfo = viewData.pageInfo;
+if pageInfo
+  - fileImporter.importCss(['/ys/stylesheets/pagebuttonset.styl']);
+  - var index = pageInfo.start;
+  - var end = pageInfo.end;
+  - var current = pageInfo.current;
+  - var max = Math.min(index + 5, end);
+  - var urlPrefix = pageInfo.urlPrefix;
+  .pageBtnSet
+    if index !== 1
+      a.pageBtn(href='#{urlPrefix}/page/#{current - 1}') 上一页
+    while index !== max
+      - var pageBtnClass = ['pageBtn'];
+      if index === current
+        - pageBtnClass.push('selected');
+      a(class=pageBtnClass, href='#{urlPrefix}/page/#{index}') #{index}
+      - index++;
+    if index < end
+      a.pageBtn(href='javascript:;') ...
+    if index <= end
+      - var endPageClass = ['pageBtn'];
+      if current === end
+        - endPageClass.push('selected');
+      a(class=endPageClass, href='#{urlPrefix}/page/#{end}') #{end}
+      if current !== end
+        a.pageBtn(href='#{urlPrefix}/page/#{current + 1}') 下一页
+    //- a.pageBtn(href='javascript:;') 1
+    //- a.pageBtn(href='javascript:;') 2
+    //- a.pageBtn(href='javascript:;') 3
+    //- a.pageBtn(href='javascript:;') 1
+    //- a.pageBtn(href='javascript:;') ...
+    //- a.pageBtn(href='javascript:;') 下一页

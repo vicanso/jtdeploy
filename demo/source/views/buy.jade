@@ -1,0 +1,19 @@
+extends ./layout
+block bodyContainer
+  include ./header
+  - fileImporter.importCss(['/ys/stylesheets/item.styl', '/ys/stylesheets/order.styl', '/ys/stylesheets/select.styl', '/ys/stylesheets/buypage.styl', '/ys/stylesheets/print.styl']);
+  - fileImporter.importJs(['/ys/javascripts/item.coffee', '/ys/javascripts/order.coffee', '/ys/javascripts/select.coffee', '/ys/javascripts/buypage.coffee'])
+  #contentContainer.notPrint
+    #buyPageContainer
+      .buyInfo
+        .depot.item
+        .client.item
+        .payType.item
+        .buyOrderNo.item 
+          i.icon.iReload.borderRadius3.getOrderNo
+          | 进货单编号：
+          span.no .
+        //- .saveToTemp.item.btn 存为草稿
+        .save.item.btn.btnPrimary 保存
+      .buyItemsContainer
+      .selectItemsContainer

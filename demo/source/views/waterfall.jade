@@ -1,0 +1,17 @@
+mixin item(item)
+  .item.borderRadius3
+    .imgContainer
+      img(src='http://oss.aliyuncs.com/ysthumb/#{item.barcode}.jpg', style='height:#{item.imgSize.height}px;')
+    .info
+      .name #{item.name}
+      .barcode 条形码：#{item.barcode}
+      .size 规格：#{item.size}
+
+
+if viewData.items
+  - fileImporter.importCss(['/ys/stylesheets/waterfall.styl']);
+  #waterfallContainer.waterfall
+    each items in viewData.items
+      .list
+        each item in items
+          mixin item(item)

@@ -1,0 +1,21 @@
+extends ./layout
+block bodyContainer
+  include ./header
+  - fileImporter.importCss(['/ys/stylesheets/item.styl', '/ys/stylesheets/querypage.styl']);
+  - fileImporter.importJs(['/ys/javascripts/item.coffee', '/ys/javascripts/querypage.coffee'])
+  #contentContainer.notPrint
+    #queryPageContainer
+      .info
+        .datePicker.item 日期选择：
+          input.borderRadius3.fromDate(type='text', value='#{viewData.date.from}')
+          span 至
+          input.borderRadius3.toDate(type='text', value='#{viewData.date.to}')
+        .typeSelect.item 类型选择：
+          span.draft
+            input(type='radio', name='type', value='草稿')
+            |  草稿
+          span.order
+            input(type='radio', name='type', value='已存单据')
+            |  已存单据
+        a.btn.btnPrimary.search(href='javascript:;') 查询
+      .tableView
