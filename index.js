@@ -121,6 +121,7 @@
       if (err) {
         return cbf(err);
       } else {
+        fs.writeFile("" + target + "/version", Date.now());
         console.dir('complete all!');
         return cbf(null);
       }

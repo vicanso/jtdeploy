@@ -91,6 +91,7 @@ handleFiles = (source, target, minPath, files, cbf) ->
     if err
       cbf err
     else
+      fs.writeFile "#{target}/version", Date.now()
       console.dir 'complete all!'
       cbf null
 minifyCss = (file, targetFile, cbf) ->
