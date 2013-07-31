@@ -103,12 +103,18 @@
     total = files.length;
     complete = 0;
     return async.eachLimit(files, 10, function(file, cbf) {
-      var ext, targetFile;
+      var ext, min, targetFile;
       targetFile = target + file.substring(source.length);
       ext = path.extname(file);
       complete++;
-      if (isHandleFile(file)) {
-        handleFile(file, targetFile, minPath, cbf);
+      min = false;
+      if (minPath && !file.indexOf(minPath)) {
+        min = true;
+      }
+      if (ext === '.js' && !min) {
+        copyFile(file, targetFile, cbf);
+      } else if (isHandleFile(file)) {
+        handleFile(file, targetFile, min, cbf);
       } else if (ext === '.css') {
         minifyCss(file, targetFile, cbf);
       } else {
@@ -145,14 +151,10 @@
     ], cbf);
   };
 
-  handleFile = function(file, targetFile, minPath, cbf) {
-    var ext, handler, min;
+  handleFile = function(file, targetFile, min, cbf) {
+    var ext, handler;
     ext = path.extname(file);
-    min = false;
     handler = parseHandlers[ext];
-    if (minPath && !file.indexOf(minPath)) {
-      min = true;
-    }
     return async.waterfall([
       function(cbf) {
         return handler(file, cbf);

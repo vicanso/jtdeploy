@@ -79,8 +79,13 @@ handleFiles = (source, target, minPath, files, cbf) ->
     targetFile = target + file.substring source.length
     ext = path.extname file
     complete++
-    if isHandleFile file
-      handleFile file, targetFile, minPath, cbf
+    min = false
+    if minPath && !file.indexOf minPath
+      min = true
+    if ext == '.js' && !min
+      copyFile file, targetFile, cbf
+    else if isHandleFile file
+      handleFile file, targetFile, min, cbf
     else if ext == '.css'
       minifyCss file, targetFile, cbf
     else
@@ -108,12 +113,9 @@ minifyCss = (file, targetFile, cbf) ->
       fs.writeFile targetFile, data, cbf
   ], cbf
 
-handleFile = (file, targetFile, minPath, cbf) ->
+handleFile = (file, targetFile, min, cbf) ->
   ext = path.extname file
-  min = false
   handler = parseHandlers[ext]
-  if minPath && !file.indexOf minPath
-    min = true
   async.waterfall [
     (cbf) ->
       handler file, cbf
