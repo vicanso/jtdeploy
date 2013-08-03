@@ -3,22 +3,20 @@ _ = require 'underscore'
 fs = require 'fs'
 mkdirp = require 'mkdirp'
 path = require 'path'
+_ = require 'underscore'
 program = require 'commander'
 cleanCSS = require 'clean-css'
 parser = require './lib/parser'
 myUtils = require './lib/utils'
-program
-  .version('0.0.1')
-  .option('-s, --source <n>', 'The Source Path')
-  .option('-t, --target <n>', 'The Target Path')
-  .option('-m, --min <n>', 'The Javascript In This Path Will Be Minify!')
-  .parse(process.argv)
 parseHandlers = 
   '.styl' : parser.stylus
   '.js' : parser.js
   '.coffee' : parser.coffee
 
-deploy = (source, target, minPath = '') ->
+deploy = (source, target, minPath = '', cbf) ->
+  if _.isFunction minPath
+    cbf = minPath
+    minPath = ''
   source = path.normalize source
   target = path.normalize target
   minPath = path.normalize minPath
@@ -39,6 +37,7 @@ deploy = (source, target, minPath = '') ->
   ], (err) ->
     if err
       console.error err
+    cbf err
 
 createDirs = (dirs, cbf) ->
   async.eachLimit dirs, 10, (dir, cbf) ->
@@ -134,10 +133,20 @@ handleFile = (file, targetFile, min, cbf) ->
   #   else if ext == '.coffee'
   #     fs.writeFile convertFileName(targetFile), data, 'utf8', cbf
 
-if program.source && program.target
-  deploy program.source, program.target, program.min
+module.exports = deploy
 
-else
-  console.error "the source path and target path must be set!"
+if __filename == process.argv[1]
+  program
+    .version('0.0.1')
+    .option('-s, --source <n>', 'The Source Path')
+    .option('-t, --target <n>', 'The Target Path')
+    .option('-m, --min <n>', 'The Javascript In This Path Will Be Minify!')
+    .parse(process.argv)
+
+  if program.source && program.target
+    deploy program.source, program.target, program.min
+
+  else
+    console.error "the source path and target path must be set!"
 
 

@@ -11,6 +11,8 @@
 
   path = require('path');
 
+  _ = require('underscore');
+
   program = require('commander');
 
   cleanCSS = require('clean-css');
@@ -19,16 +21,18 @@
 
   myUtils = require('./lib/utils');
 
-  program.version('0.0.1').option('-s, --source <n>', 'The Source Path').option('-t, --target <n>', 'The Target Path').option('-m, --min <n>', 'The Javascript In This Path Will Be Minify!').parse(process.argv);
-
   parseHandlers = {
     '.styl': parser.stylus,
     '.js': parser.js,
     '.coffee': parser.coffee
   };
 
-  deploy = function(source, target, minPath) {
+  deploy = function(source, target, minPath, cbf) {
     if (minPath == null) {
+      minPath = '';
+    }
+    if (_.isFunction(minPath)) {
+      cbf = minPath;
       minPath = '';
     }
     source = path.normalize(source);
@@ -55,8 +59,9 @@
       }
     ], function(err) {
       if (err) {
-        return console.error(err);
+        console.error(err);
       }
+      return cbf(err);
     });
   };
 
@@ -174,10 +179,15 @@
     ], cbf);
   };
 
-  if (program.source && program.target) {
-    deploy(program.source, program.target, program.min);
-  } else {
-    console.error("the source path and target path must be set!");
+  module.exports = deploy;
+
+  if (__filename === process.argv[1]) {
+    program.version('0.0.1').option('-s, --source <n>', 'The Source Path').option('-t, --target <n>', 'The Target Path').option('-m, --min <n>', 'The Javascript In This Path Will Be Minify!').parse(process.argv);
+    if (program.source && program.target) {
+      deploy(program.source, program.target, program.min);
+    } else {
+      console.error("the source path and target path must be set!");
+    }
   }
 
 }).call(this);
