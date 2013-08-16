@@ -8,12 +8,14 @@ program = require 'commander'
 cleanCSS = require 'clean-css'
 parser = require './lib/parser'
 myUtils = require './lib/utils'
+noop = ->
+
 parseHandlers = 
   '.styl' : parser.stylus
   '.js' : parser.js
   '.coffee' : parser.coffee
 
-deploy = (source, target, minPath = '', cbf) ->
+deploy = (source, target, minPath = '', cbf = noop) ->
   if _.isFunction minPath
     cbf = minPath
     minPath = ''
@@ -135,7 +137,7 @@ handleFile = (file, targetFile, min, cbf) ->
 
 module.exports = deploy
 
-if __filename == process.argv[1]
+if __filename == process.argv[1] || __filename == process.argv[1] + '.js'
   program
     .version('0.0.1')
     .option('-s, --source <n>', 'The Source Path')

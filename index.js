@@ -1,5 +1,5 @@
 (function() {
-  var async, cleanCSS, convertFileName, copyFile, createDirs, deploy, fs, handleFile, handleFiles, isHandleFile, minifyCss, mkdirp, myUtils, parseHandlers, parser, path, program, _;
+  var async, cleanCSS, convertFileName, copyFile, createDirs, deploy, fs, handleFile, handleFiles, isHandleFile, minifyCss, mkdirp, myUtils, noop, parseHandlers, parser, path, program, _;
 
   async = require('async');
 
@@ -21,6 +21,8 @@
 
   myUtils = require('./lib/utils');
 
+  noop = function() {};
+
   parseHandlers = {
     '.styl': parser.stylus,
     '.js': parser.js,
@@ -30,6 +32,9 @@
   deploy = function(source, target, minPath, cbf) {
     if (minPath == null) {
       minPath = '';
+    }
+    if (cbf == null) {
+      cbf = noop;
     }
     if (_.isFunction(minPath)) {
       cbf = minPath;
@@ -181,7 +186,7 @@
 
   module.exports = deploy;
 
-  if (__filename === process.argv[1]) {
+  if (__filename === process.argv[1] || __filename === process.argv[1] + '.js') {
     program.version('0.0.1').option('-s, --source <n>', 'The Source Path').option('-t, --target <n>', 'The Target Path').option('-m, --min <n>', 'The Javascript In This Path Will Be Minify!').parse(process.argv);
     if (program.source && program.target) {
       deploy(program.source, program.target, program.min);
