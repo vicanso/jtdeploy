@@ -15,10 +15,21 @@ parseHandlers =
   '.js' : parser.js
   '.coffee' : parser.coffee
 
-deploy = (source, target, minPath = '', cbf = noop) ->
-  if _.isFunction minPath
-    cbf = minPath
-    minPath = ''
+convertLimitSize = (limitSize) ->
+  return 0 if !limitSize
+  limitSize = limitSize.toUpperCase()
+  lastChar = limitSize.charAt limitSize.length - 1
+  limitSize = GLOBAL.parseInt limitSize
+  if 'K' == lastChar
+    limitSize *= 1024
+  limitSize
+
+deploy = (program, cbf = noop) ->
+  source = program.source
+  target = program.target
+  minPath = program.min
+  limitSize = convertLimitSize program.size
+
   source = path.normalize source
   target = path.normalize target
   minPath = path.normalize minPath
@@ -35,7 +46,7 @@ deploy = (source, target, minPath = '', cbf = noop) ->
         else
           cbf null, infos.files
     (files, cbf) ->
-      handleFiles source, target, minPath, files, cbf
+      handleFiles source, target, minPath, limitSize, files, cbf
   ], (err) ->
     if err
       console.error err
@@ -73,7 +84,7 @@ copyFile = (file, targetFile, cbf) ->
   # process.nextTick ->
   #   cbf null
 
-handleFiles = (source, target, minPath, files, cbf) ->
+handleFiles = (source, target, minPath, limitSize, files, cbf) ->
   total = files.length
   complete = 0
   async.eachLimit files, 10, (file, cbf) ->
@@ -86,9 +97,9 @@ handleFiles = (source, target, minPath, files, cbf) ->
     if ext == '.js' && !min
       copyFile file, targetFile, cbf
     else if isHandleFile file
-      handleFile file, targetFile, min, cbf
+      handleFile file, targetFile, min, limitSize, cbf
     else if ext == '.css'
-      minifyCss file, targetFile, cbf
+      minifyCss file, targetFile, limitSize, cbf
     else
       copyFile file, targetFile, cbf
     if !(complete % 10)
@@ -100,7 +111,7 @@ handleFiles = (source, target, minPath, files, cbf) ->
       fs.writeFile "#{target}/version", Date.now()
       console.dir 'complete all!'
       cbf null
-minifyCss = (file, targetFile, cbf) ->
+minifyCss = (file, targetFile, limitSize, cbf) ->
   async.waterfall [
     (cbf) ->
       fs.readFile file, 'utf8', cbf
@@ -111,10 +122,15 @@ minifyCss = (file, targetFile, cbf) ->
       }
       cbf null, css
     (data, cbf) ->
+      if limitSize
+        parser.inlineImage data, file, limitSize, cbf
+      else
+        cbf null, data
+    (data, cbf) ->
       fs.writeFile targetFile, data, cbf
   ], cbf
 
-handleFile = (file, targetFile, min, cbf) ->
+handleFile = (file, targetFile, min, limitSize, cbf) ->
   ext = path.extname file
   handler = parseHandlers[ext]
   async.waterfall [
@@ -123,6 +139,8 @@ handleFile = (file, targetFile, min, cbf) ->
     (data, cbf) ->
       if min && ext == '.coffee'
         parser.js data, {fromString : true}, cbf
+      else if ext == '.styl' && limitSize
+        parser.inlineImage data, file, limitSize, cbf
       else
         cbf null, data
     (data, cbf) ->
@@ -143,10 +161,11 @@ if __filename == process.argv[1] || __filename == process.argv[1] + '.js'
     .option('-s, --source <n>', 'The Source Path')
     .option('-t, --target <n>', 'The Target Path')
     .option('-m, --min <n>', 'The Javascript In This Path Will Be Minify!')
+    .option('--size <n>', 'Inline Image\'s limit size, eg. 10k')
     .parse(process.argv)
 
   if program.source && program.target
-    deploy program.source, program.target, program.min
+    deploy program
 
   else
     console.error "the source path and target path must be set!"

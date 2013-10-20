@@ -1,5 +1,5 @@
 (function() {
-  var async, cleanCSS, convertFileName, copyFile, createDirs, deploy, fs, handleFile, handleFiles, isHandleFile, minifyCss, mkdirp, myUtils, noop, parseHandlers, parser, path, program, _;
+  var async, cleanCSS, convertFileName, convertLimitSize, copyFile, createDirs, deploy, fs, handleFile, handleFiles, isHandleFile, minifyCss, mkdirp, myUtils, noop, parseHandlers, parser, path, program, _;
 
   async = require('async');
 
@@ -29,17 +29,29 @@
     '.coffee': parser.coffee
   };
 
-  deploy = function(source, target, minPath, cbf) {
-    if (minPath == null) {
-      minPath = '';
+  convertLimitSize = function(limitSize) {
+    var lastChar;
+    if (!limitSize) {
+      return 0;
     }
+    limitSize = limitSize.toUpperCase();
+    lastChar = limitSize.charAt(limitSize.length - 1);
+    limitSize = GLOBAL.parseInt(limitSize);
+    if ('K' === lastChar) {
+      limitSize *= 1024;
+    }
+    return limitSize;
+  };
+
+  deploy = function(program, cbf) {
+    var limitSize, minPath, source, target;
     if (cbf == null) {
       cbf = noop;
     }
-    if (_.isFunction(minPath)) {
-      cbf = minPath;
-      minPath = '';
-    }
+    source = program.source;
+    target = program.target;
+    minPath = program.min;
+    limitSize = convertLimitSize(program.size);
     source = path.normalize(source);
     target = path.normalize(target);
     minPath = path.normalize(minPath);
@@ -60,7 +72,7 @@
           }
         });
       }, function(files, cbf) {
-        return handleFiles(source, target, minPath, files, cbf);
+        return handleFiles(source, target, minPath, limitSize, files, cbf);
       }
     ], function(err) {
       if (err) {
@@ -108,7 +120,7 @@
     ], cbf);
   };
 
-  handleFiles = function(source, target, minPath, files, cbf) {
+  handleFiles = function(source, target, minPath, limitSize, files, cbf) {
     var complete, total;
     total = files.length;
     complete = 0;
@@ -124,9 +136,9 @@
       if (ext === '.js' && !min) {
         copyFile(file, targetFile, cbf);
       } else if (isHandleFile(file)) {
-        handleFile(file, targetFile, min, cbf);
+        handleFile(file, targetFile, min, limitSize, cbf);
       } else if (ext === '.css') {
-        minifyCss(file, targetFile, cbf);
+        minifyCss(file, targetFile, limitSize, cbf);
       } else {
         copyFile(file, targetFile, cbf);
       }
@@ -144,7 +156,7 @@
     });
   };
 
-  minifyCss = function(file, targetFile, cbf) {
+  minifyCss = function(file, targetFile, limitSize, cbf) {
     return async.waterfall([
       function(cbf) {
         return fs.readFile(file, 'utf8', cbf);
@@ -156,12 +168,18 @@
         });
         return cbf(null, css);
       }, function(data, cbf) {
+        if (limitSize) {
+          return parser.inlineImage(data, file, limitSize, cbf);
+        } else {
+          return cbf(null, data);
+        }
+      }, function(data, cbf) {
         return fs.writeFile(targetFile, data, cbf);
       }
     ], cbf);
   };
 
-  handleFile = function(file, targetFile, min, cbf) {
+  handleFile = function(file, targetFile, min, limitSize, cbf) {
     var ext, handler;
     ext = path.extname(file);
     handler = parseHandlers[ext];
@@ -173,6 +191,8 @@
           return parser.js(data, {
             fromString: true
           }, cbf);
+        } else if (ext === '.styl' && limitSize) {
+          return parser.inlineImage(data, file, limitSize, cbf);
         } else {
           return cbf(null, data);
         }
@@ -187,9 +207,9 @@
   module.exports = deploy;
 
   if (__filename === process.argv[1] || __filename === process.argv[1] + '.js') {
-    program.version('0.0.1').option('-s, --source <n>', 'The Source Path').option('-t, --target <n>', 'The Target Path').option('-m, --min <n>', 'The Javascript In This Path Will Be Minify!').parse(process.argv);
+    program.version('0.0.1').option('-s, --source <n>', 'The Source Path').option('-t, --target <n>', 'The Target Path').option('-m, --min <n>', 'The Javascript In This Path Will Be Minify!').option('--size <n>', 'Inline Image\'s limit size, eg. 10k').parse(process.argv);
     if (program.source && program.target) {
-      deploy(program.source, program.target, program.min);
+      deploy(program);
     } else {
       console.error("the source path and target path must be set!");
     }
