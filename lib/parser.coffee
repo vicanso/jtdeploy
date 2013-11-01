@@ -100,9 +100,10 @@ convertImageToBase64 = (data, file, limit, cbf) ->
           newCss = css.replace replaceImageUrl, '"' + newImgUrl + '"'
         if newCss && newCss != css
           tmpCss = css.substring 0, css.length - 1
+          cssData.push newCss.substring 0, newCss.length - 1
           if dataUri
             cssData.push ";*#{tmpCss};"
-          cssData.push newCss
+          cssData.push newCss.charAt newCss.length - 1
           startIndex += css.length
         cbf err
     else
