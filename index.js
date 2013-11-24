@@ -206,7 +206,7 @@
 
   module.exports = deploy;
 
-  if (__filename === process.argv[1] || __filename === process.argv[1] + '.js') {
+  if (require.main === module) {
     program.version('0.0.1').option('-s, --source <n>', 'The Source Path').option('-t, --target <n>', 'The Target Path').option('-m, --min <n>', 'The Javascript In This Path Will Be Minify!').option('--size <n>', 'Inline Image\'s limit size, eg. 10k').parse(process.argv);
     if (program.source && program.target) {
       deploy(program);

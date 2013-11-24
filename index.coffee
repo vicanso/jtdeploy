@@ -155,7 +155,7 @@ handleFile = (file, targetFile, min, limitSize, cbf) ->
 
 module.exports = deploy
 
-if __filename == process.argv[1] || __filename == process.argv[1] + '.js'
+if require.main == module
   program
     .version('0.0.1')
     .option('-s, --source <n>', 'The Source Path')
